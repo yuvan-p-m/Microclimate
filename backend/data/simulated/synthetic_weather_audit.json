@@ -1,0 +1,440 @@
+{
+  "audit_date": "2026-09-29T08:51:50.016697+00:00",
+  "dataset_audited": "backend/data/simulated/synthetic_local_weather_targets.csv",
+  "dataset_rows": 498201,
+  "panchayat_count": 31,
+  "temporal_range": "1981-01-01 to 2024-12-31",
+  "integrity_status": "PASS",
+  "temperature_behavior": "PASS",
+  "rainfall_behavior": "PASS",
+  "spatial_behavior": "PASS",
+  "seasonal_behavior": "PASS",
+  "overall_status": "READY_FOR_PROTOTYPE_ML",
+  "warnings_count": 1,
+  "invalid_count": 0,
+  "integrity_checks": {
+    "row_count_match": true,
+    "panchayat_count_match": true,
+    "duplicate_rows": 0,
+    "missing_values": 0,
+    "nan_inf_values": 0,
+    "negative_rainfall": 0,
+    "tmax_lt_tmin": 0,
+    "diurnal_range_lt_2c": 0,
+    "dry_day_invariant_preserved": true,
+    "seed_verified": true
+  },
+  "distribution_metrics": {
+    "rainfall_mm": {
+      "coarse_mean": 3.955,
+      "synthetic_mean": 4.206,
+      "coarse_median": 0.0,
+      "synthetic_median": 0.0,
+      "coarse_min": 0.0,
+      "synthetic_min": 0.0,
+      "coarse_max": 709.52,
+      "synthetic_max": 688.59,
+      "mean_difference": 0.251,
+      "mean_absolute_difference": 0.414,
+      "std_difference": 1.49,
+      "p05_difference": -0.184,
+      "p50_difference": 0.0,
+      "p95_difference": 1.921
+    },
+    "tmax_c": {
+      "coarse_mean": 23.867,
+      "synthetic_mean": 23.584,
+      "coarse_median": 23.589,
+      "synthetic_median": 22.52,
+      "coarse_min": 12.0,
+      "synthetic_min": 7.95,
+      "coarse_max": 38.6,
+      "synthetic_max": 42.15,
+      "mean_difference": -0.282,
+      "mean_absolute_difference": 2.402,
+      "std_difference": 2.685,
+      "p05_difference": -3.908,
+      "p50_difference": -1.409,
+      "p95_difference": 4.335
+    },
+    "tmin_c": {
+      "coarse_mean": 15.537,
+      "synthetic_mean": 15.693,
+      "coarse_median": 15.417,
+      "synthetic_median": 14.56,
+      "coarse_min": 3.74,
+      "synthetic_min": -0.08,
+      "coarse_max": 30.06,
+      "synthetic_max": 33.73,
+      "mean_difference": 0.156,
+      "mean_absolute_difference": 2.328,
+      "std_difference": 2.761,
+      "p05_difference": -3.328,
+      "p50_difference": -1.075,
+      "p95_difference": 4.857
+    }
+  },
+  "temperature_extremes": {
+    "synthetic_tmax_gt_40": {
+      "count": 532,
+      "percentage": 0.1068,
+      "classification": "VALID",
+      "panchayats": {
+        "Sreemadurai Grama Panchayat": 372,
+        "Pandalur Town Panchayat": 160
+      },
+      "elevation_range_m": "891.5 to 1123.3",
+      "months": {
+        "04": 304,
+        "03": 190,
+        "05": 30,
+        "02": 8
+      },
+      "coarse_range": "35.55 to 38.60",
+      "synthetic_range": "40.01 to 42.15",
+      "rational": "Occurs exclusively in low-elevation western foothill Panchayats (Sreemadurai at 891m, Pandalur at 1123m) during peak pre-monsoon heatwaves (March-May) where coarse INDmet temperatures already reach 35.5-38.6\u00b0C. Lapse rate elevates temperature by +3.1 to +4.6\u00b0C relative to the 1600m mean."
+    },
+    "synthetic_tmax_lt_10": {
+      "count": 85,
+      "percentage": 0.0171,
+      "classification": "VALID",
+      "panchayats": {
+        "Udhagamandalam (Ooty)": 42,
+        "Nanjanad Grama Panchayat": 40,
+        "Ketti Town Panchayat": 2,
+        "Bikketti Town Panchayat": 1
+      },
+      "elevation_range_m": "1991.9 to 2233.6",
+      "months": {
+        "12": 26,
+        "11": 23,
+        "07": 13,
+        "06": 10,
+        "08": 6,
+        "10": 4,
+        "01": 3
+      },
+      "coarse_range": "12.00 to 14.41",
+      "synthetic_range": "7.95 to 9.99",
+      "rational": "Occurs exclusively in high-elevation montane plateau Panchayats (Ooty 2234m, Nanjanad 2152m, Ketti 2014m) during winter (Nov-Jan) and overcast SW monsoon events (June-July). Coarse Tmax is 12.0-14.4\u00b0C; vertical lapse cooling of -4.1\u00b0C brings daytime maxima to 7.95-9.99\u00b0C."
+    },
+    "synthetic_tmin_lt_0": {
+      "count": 1,
+      "percentage": 0.0002,
+      "classification": "VALID",
+      "panchayats": {
+        "Udhagamandalam (Ooty)": 1
+      },
+      "elevation_range_m": "2233.6 to 2233.6",
+      "months": {
+        "01": 1
+      },
+      "coarse_range": "3.74 to 3.74",
+      "synthetic_range": "-0.08 to -0.08",
+      "rational": "A single winter event in Udhagamandalam (Ooty, 2234m) on 1984-01-20 (synthetic -0.08\u00b0C vs coarse 3.74\u00b0C). Sub-zero nocturnal ground frost in Ooty during January is a physically validated meteorological reality."
+    },
+    "synthetic_tmin_gt_30": {
+      "count": 1781,
+      "percentage": 0.3575,
+      "classification": "POTENTIALLY_SUSPICIOUS",
+      "panchayats": {
+        "Sreemadurai Grama Panchayat": 1309,
+        "Pandalur Town Panchayat": 472
+      },
+      "elevation_range_m": "891.5 to 1123.3",
+      "months": {
+        "05": 1014,
+        "04": 484,
+        "06": 265,
+        "03": 9,
+        "07": 8,
+        "09": 1
+      },
+      "coarse_range": "24.74 to 30.06",
+      "synthetic_range": "30.01 to 33.73",
+      "rational": "Occurs in 1,781 instances (0.358%) in Sreemadurai (891m) and Pandalur (1123m) during sultry pre-monsoon nights (April-June) where coarse Tmin was 24.7-30.1\u00b0C. While physically explained by the +4.6\u00b0C lapse adjustment, night-time temperatures > 30\u00b0C are unusually warm for hill-district boundaries and should be noted for future calibration."
+    }
+  },
+  "spatial_summary": {
+    "max_cooling_panchayat": {
+      "panchayat": "Udhagamandalam (Ooty)",
+      "elevation_m": 2233.6,
+      "mean_tmax_delta": -4.036,
+      "mean_tmin_delta": -3.901
+    },
+    "max_warming_panchayat": {
+      "panchayat": "Burliar Grama Panchayat",
+      "elevation_m": 782.4,
+      "mean_tmax_delta": 4.643,
+      "mean_tmin_delta": 5.7
+    },
+    "max_precipitation_multiplier_panchayat": {
+      "panchayat": "Melur Grama Panchayat",
+      "elevation_m": 1645.4,
+      "mean_rain_ratio": 1.207
+    },
+    "min_precipitation_multiplier_panchayat": {
+      "panchayat": "Sreemadurai Grama Panchayat",
+      "elevation_m": 891.5,
+      "mean_rain_ratio": 0.865
+    }
+  },
+  "monthly_seasonal_breakdown": [
+    {
+      "month_num": 1,
+      "month_name": "Jan",
+      "coarse_rainfall_mm": 1.148,
+      "synthetic_rainfall_mm": 1.245,
+      "diff_rainfall_mm": 0.097,
+      "coarse_tmax_c": 23.116,
+      "synthetic_tmax_c": 22.833,
+      "diff_tmax_c": -0.283,
+      "coarse_tmin_c": 12.632,
+      "synthetic_tmin_c": 12.789,
+      "diff_tmin_c": 0.157
+    },
+    {
+      "month_num": 2,
+      "month_name": "Feb",
+      "coarse_rainfall_mm": 0.737,
+      "synthetic_rainfall_mm": 0.796,
+      "diff_rainfall_mm": 0.059,
+      "coarse_tmax_c": 24.95,
+      "synthetic_tmax_c": 24.669,
+      "diff_tmax_c": -0.281,
+      "coarse_tmin_c": 13.746,
+      "synthetic_tmin_c": 13.902,
+      "diff_tmin_c": 0.156
+    },
+    {
+      "month_num": 3,
+      "month_name": "Mar",
+      "coarse_rainfall_mm": 1.602,
+      "synthetic_rainfall_mm": 1.732,
+      "diff_rainfall_mm": 0.13,
+      "coarse_tmax_c": 26.849,
+      "synthetic_tmax_c": 26.567,
+      "diff_tmax_c": -0.282,
+      "coarse_tmin_c": 15.707,
+      "synthetic_tmin_c": 15.865,
+      "diff_tmin_c": 0.158
+    },
+    {
+      "month_num": 4,
+      "month_name": "Apr",
+      "coarse_rainfall_mm": 3.209,
+      "synthetic_rainfall_mm": 3.44,
+      "diff_rainfall_mm": 0.231,
+      "coarse_tmax_c": 27.311,
+      "synthetic_tmax_c": 27.028,
+      "diff_tmax_c": -0.283,
+      "coarse_tmin_c": 17.496,
+      "synthetic_tmin_c": 17.652,
+      "diff_tmin_c": 0.156
+    },
+    {
+      "month_num": 5,
+      "month_name": "May",
+      "coarse_rainfall_mm": 4.991,
+      "synthetic_rainfall_mm": 5.332,
+      "diff_rainfall_mm": 0.341,
+      "coarse_tmax_c": 26.053,
+      "synthetic_tmax_c": 25.771,
+      "diff_tmax_c": -0.282,
+      "coarse_tmin_c": 17.661,
+      "synthetic_tmin_c": 17.818,
+      "diff_tmin_c": 0.157
+    },
+    {
+      "month_num": 6,
+      "month_name": "Jun",
+      "coarse_rainfall_mm": 4.843,
+      "synthetic_rainfall_mm": 5.022,
+      "diff_rainfall_mm": 0.179,
+      "coarse_tmax_c": 23.064,
+      "synthetic_tmax_c": 22.782,
+      "diff_tmax_c": -0.282,
+      "coarse_tmin_c": 16.783,
+      "synthetic_tmin_c": 16.939,
+      "diff_tmin_c": 0.156
+    },
+    {
+      "month_num": 7,
+      "month_name": "Jul",
+      "coarse_rainfall_mm": 5.283,
+      "synthetic_rainfall_mm": 5.476,
+      "diff_rainfall_mm": 0.193,
+      "coarse_tmax_c": 22.117,
+      "synthetic_tmax_c": 21.835,
+      "diff_tmax_c": -0.282,
+      "coarse_tmin_c": 16.178,
+      "synthetic_tmin_c": 16.334,
+      "diff_tmin_c": 0.156
+    },
+    {
+      "month_num": 8,
+      "month_name": "Aug",
+      "coarse_rainfall_mm": 4.023,
+      "synthetic_rainfall_mm": 4.212,
+      "diff_rainfall_mm": 0.189,
+      "coarse_tmax_c": 22.324,
+      "synthetic_tmax_c": 22.041,
+      "diff_tmax_c": -0.283,
+      "coarse_tmin_c": 16.032,
+      "synthetic_tmin_c": 16.189,
+      "diff_tmin_c": 0.157
+    },
+    {
+      "month_num": 9,
+      "month_name": "Sep",
+      "coarse_rainfall_mm": 4.116,
+      "synthetic_rainfall_mm": 4.385,
+      "diff_rainfall_mm": 0.269,
+      "coarse_tmax_c": 23.131,
+      "synthetic_tmax_c": 22.848,
+      "diff_tmax_c": -0.283,
+      "coarse_tmin_c": 15.999,
+      "synthetic_tmin_c": 16.155,
+      "diff_tmin_c": 0.156
+    },
+    {
+      "month_num": 10,
+      "month_name": "Oct",
+      "coarse_rainfall_mm": 8.162,
+      "synthetic_rainfall_mm": 8.742,
+      "diff_rainfall_mm": 0.58,
+      "coarse_tmax_c": 23.018,
+      "synthetic_tmax_c": 22.736,
+      "diff_tmax_c": -0.282,
+      "coarse_tmin_c": 15.854,
+      "synthetic_tmin_c": 16.009,
+      "diff_tmin_c": 0.155
+    },
+    {
+      "month_num": 11,
+      "month_name": "Nov",
+      "coarse_rainfall_mm": 6.931,
+      "synthetic_rainfall_mm": 7.481,
+      "diff_rainfall_mm": 0.55,
+      "coarse_tmax_c": 22.342,
+      "synthetic_tmax_c": 22.058,
+      "diff_tmax_c": -0.284,
+      "coarse_tmin_c": 14.86,
+      "synthetic_tmin_c": 15.017,
+      "diff_tmin_c": 0.157
+    },
+    {
+      "month_num": 12,
+      "month_name": "Dec",
+      "coarse_rainfall_mm": 2.236,
+      "synthetic_rainfall_mm": 2.421,
+      "diff_rainfall_mm": 0.185,
+      "coarse_tmax_c": 22.236,
+      "synthetic_tmax_c": 21.954,
+      "diff_tmax_c": -0.282,
+      "coarse_tmin_c": 13.434,
+      "synthetic_tmin_c": 13.59,
+      "diff_tmin_c": 0.156
+    }
+  ],
+  "top_rainfall_events": [
+    {
+      "date": "2012-06-18",
+      "panchayat_name": "Nelliyalam Municipality",
+      "elevation_m": 1008.7,
+      "slope_deg": 23.95,
+      "coarse_rainfall_mm": 631.17,
+      "synthetic_rainfall_mm": 688.59,
+      "multiplier": 1.091
+    },
+    {
+      "date": "1992-06-21",
+      "panchayat_name": "Pandalur Town Panchayat",
+      "elevation_m": 1123.3,
+      "slope_deg": 31.14,
+      "coarse_rainfall_mm": 709.52,
+      "synthetic_rainfall_mm": 684.06,
+      "multiplier": 0.964
+    },
+    {
+      "date": "1992-06-21",
+      "panchayat_name": "Nelliyalam Municipality",
+      "elevation_m": 1008.7,
+      "slope_deg": 23.95,
+      "coarse_rainfall_mm": 617.27,
+      "synthetic_rainfall_mm": 612.19,
+      "multiplier": 0.992
+    },
+    {
+      "date": "2012-06-18",
+      "panchayat_name": "Pandalur Town Panchayat",
+      "elevation_m": 1123.3,
+      "slope_deg": 31.14,
+      "coarse_rainfall_mm": 561.1,
+      "synthetic_rainfall_mm": 587.49,
+      "multiplier": 1.047
+    },
+    {
+      "date": "1989-07-23",
+      "panchayat_name": "Pandalur Town Panchayat",
+      "elevation_m": 1123.3,
+      "slope_deg": 31.14,
+      "coarse_rainfall_mm": 455.83,
+      "synthetic_rainfall_mm": 489.15,
+      "multiplier": 1.073
+    },
+    {
+      "date": "1989-07-24",
+      "panchayat_name": "Pandalur Town Panchayat",
+      "elevation_m": 1123.3,
+      "slope_deg": 31.14,
+      "coarse_rainfall_mm": 493.68,
+      "synthetic_rainfall_mm": 468.83,
+      "multiplier": 0.95
+    },
+    {
+      "date": "2011-03-24",
+      "panchayat_name": "Yedapalli Grama Panchayat",
+      "elevation_m": 1923.1,
+      "slope_deg": 18.08,
+      "coarse_rainfall_mm": 349.5,
+      "synthetic_rainfall_mm": 443.77,
+      "multiplier": 1.27
+    },
+    {
+      "date": "2011-03-24",
+      "panchayat_name": "Jagathala Town Panchayat",
+      "elevation_m": 1810.5,
+      "slope_deg": 17.75,
+      "coarse_rainfall_mm": 349.5,
+      "synthetic_rainfall_mm": 362.02,
+      "multiplier": 1.036
+    },
+    {
+      "date": "2011-03-24",
+      "panchayat_name": "Coonoor Municipality",
+      "elevation_m": 1835.3,
+      "slope_deg": 15.02,
+      "coarse_rainfall_mm": 349.5,
+      "synthetic_rainfall_mm": 354.82,
+      "multiplier": 1.015
+    },
+    {
+      "date": "2012-06-18",
+      "panchayat_name": "Sholur Grama Panchayat",
+      "elevation_m": 1171.3,
+      "slope_deg": 21.77,
+      "coarse_rainfall_mm": 332.88,
+      "synthetic_rainfall_mm": 346.62,
+      "multiplier": 1.041
+    }
+  ],
+  "elevation_lapse_verification": {
+    "empirical_tmax_lapse_slope_c_per_m": -0.006362,
+    "empirical_tmin_lapse_slope_c_per_m": -0.00655,
+    "empirical_rainfall_slope_per_m": 0.000163,
+    "target_lapse_rate": -0.0065,
+    "verified": true
+  },
+  "scientific_disclaimer": "These targets are synthetic and are suitable only for prototype ML pipeline development. Their use cannot establish real-world Panchayat-level forecast accuracy."
+}

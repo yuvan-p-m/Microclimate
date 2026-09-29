@@ -1,0 +1,119 @@
+{
+  "dataset_name": "Panchayat Weather Intelligence - Synthetic Local Weather Targets",
+  "dataset_type": "synthetic_downscaling_target",
+  "generation_date": "2026-09-29T08:47:30.169575+00:00",
+  "generation_version": "v1.0",
+  "random_seed": 42,
+  "spatial_extent": {
+    "district": "Nilgiris",
+    "state": "Tamil Nadu, India",
+    "number_of_panchayats": 31,
+    "panchayat_ids": [
+      "TN_NIL_CNR_01",
+      "TN_NIL_CNR_02",
+      "TN_NIL_CNR_03",
+      "TN_NIL_CNR_04",
+      "TN_NIL_CNR_05",
+      "TN_NIL_CNR_06",
+      "TN_NIL_CNR_07",
+      "TN_NIL_GDL_01",
+      "TN_NIL_GDL_02",
+      "TN_NIL_GDL_03",
+      "TN_NIL_GDL_04",
+      "TN_NIL_GDL_05",
+      "TN_NIL_GDL_06",
+      "TN_NIL_KND_01",
+      "TN_NIL_KND_02",
+      "TN_NIL_KND_03",
+      "TN_NIL_KTG_01",
+      "TN_NIL_KTG_02",
+      "TN_NIL_KTG_03",
+      "TN_NIL_KTG_04",
+      "TN_NIL_KTG_05",
+      "TN_NIL_KTG_06",
+      "TN_NIL_OOTY_01",
+      "TN_NIL_OOTY_02",
+      "TN_NIL_OOTY_03",
+      "TN_NIL_OOTY_04",
+      "TN_NIL_OOTY_05",
+      "TN_NIL_OOTY_06",
+      "TN_NIL_OOTY_07",
+      "TN_NIL_OOTY_08",
+      "TN_NIL_OOTY_09"
+    ]
+  },
+  "temporal_extent": {
+    "start_date": "1981-01-01",
+    "end_date": "2024-12-31",
+    "total_days": 16071,
+    "total_rows": 498201
+  },
+  "variables_generated": {
+    "synthetic_rainfall_mm": {
+      "unit": "mm/day",
+      "description": "Synthetic local precipitation target derived from INDmet with orographic and topographic scaling.",
+      "min": 0.0,
+      "max": 688.59,
+      "mean": 4.206,
+      "median": 0.0
+    },
+    "synthetic_tmax_c": {
+      "unit": "\u00b0C",
+      "description": "Synthetic local daily maximum temperature target with vertical lapse rate and microclimate adjustments.",
+      "min": 7.95,
+      "max": 42.15,
+      "mean": 23.584
+    },
+    "synthetic_tmin_c": {
+      "unit": "\u00b0C",
+      "description": "Synthetic local daily minimum temperature target with vertical lapse rate and nocturnal canopy buffering.",
+      "min": -0.08,
+      "max": 33.73,
+      "mean": 15.693
+    }
+  },
+  "source_datasets": [
+    "backend/data/processed/ml_dataset/downscaling_base.csv",
+    "backend/data/processed/historical_weather.csv (INDmet Zenodo 15430548)",
+    "backend/data/processed/panchayat_master.csv (Copernicus DEM 30m, ESA WorldCover 10m, Sentinel-2 NDVI)"
+  ],
+  "formulas_and_adjustments_used": {
+    "temperature_lapse_rate": "Delta_T_elev = -0.0065 * (elevation_m - 1600.0)",
+    "solar_radiation_aspect": "Delta_T_rad = 0.35 * clip(cos(radians(aspect_deg - 135)) * (slope_deg / 45), -1, 1)",
+    "vegetation_buffering": "Delta_Tmax_forest = -0.40 * forest_fraction, Delta_Tmin_forest = +0.25 * forest_fraction",
+    "builtup_effect": "Delta_T_urban = +0.30 * builtup_fraction",
+    "temperature_stochastic": "eps_T ~ Normal(0, 0.15) clipped to [-0.40, 0.40]",
+    "diurnal_constraint": "Tmax >= Tmin + 2.0 \u00b0C",
+    "rainfall_orographic_scaling": "F_local = clip(f_elev * f_slope * f_veg, 0.70, 1.45)",
+    "rainfall_stochastic": "eps_rain ~ Normal(0, 0.06) clipped to [-0.15, 0.15] (applied only on rain days)"
+  },
+  "distribution_comparison": {
+    "rainfall": {
+      "coarse_mean": 3.955,
+      "synthetic_mean": 4.206,
+      "coarse_max": 709.52,
+      "synthetic_max": 688.59
+    },
+    "tmax": {
+      "coarse_mean": 23.867,
+      "synthetic_mean": 23.584,
+      "coarse_min": 12.004,
+      "synthetic_min": 7.95,
+      "coarse_max": 38.601,
+      "synthetic_max": 42.15
+    },
+    "tmin": {
+      "coarse_mean": 15.537,
+      "synthetic_mean": 15.693,
+      "coarse_min": 3.737,
+      "synthetic_min": -0.08,
+      "coarse_max": 30.063,
+      "synthetic_max": 33.73
+    }
+  },
+  "scientific_integrity_statements": {
+    "is_synthetic": true,
+    "is_ground_truth": false,
+    "statement": "These target values are deterministically simulated using physical terrain downscaling heuristics (lapse rates, slope-aspect radiation, and land-cover buffering) solely for machine learning model architecture prototyping, pipeline verification, and bias-correction scaffolding. They are NOT empirical in-situ weather station observations and MUST NOT be claimed as real-world ground-truth measurements or used to claim validated real-world meteorological predictive skill."
+  }
+}

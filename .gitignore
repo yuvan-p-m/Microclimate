@@ -1,0 +1,35 @@
+# Virtual Environment
+backend/.venv/
+.venv/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Frontend Dependencies & Build Output
+frontend/node_modules/
+frontend/dist/
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Training / generated datasets
+backend/data/raw/
+backend/data/processed/ml_dataset/
+backend/data/simulated/
+
+# Generated model artifacts
+# Keep the deployed RF models tracked explicitly
+*.pkl
+
+# OS Specific
+.DS_Store
+Thumbs.db
