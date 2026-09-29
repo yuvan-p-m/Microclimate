@@ -3,9 +3,10 @@ import type { FarmerFeedbackInput, FarmerFeedbackRecord } from '../types/feedbac
 
 export const feedbackApi = {
   submitFeedback: (feedback: FarmerFeedbackInput) =>
-    fetchApi<FarmerFeedbackRecord>('/api/v1/feedback', {
+    fetchApi<FarmerFeedbackRecord>('/feedback', {
       method: 'POST',
       body: JSON.stringify(feedback),
     }),
-  listFeedback: () => fetchApi<FarmerFeedbackRecord[]>('/api/v1/feedback'),
+  listFeedback: () => fetchApi<FarmerFeedbackRecord[]>('/feedback'),
 };
+

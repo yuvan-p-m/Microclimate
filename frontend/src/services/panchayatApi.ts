@@ -15,7 +15,7 @@ export const panchayatApi = {
   getPanchayatForecast: (panchayatId: string, date: string): Promise<PanchayatDownscaleResponse> => {
     const encodedId = encodeURIComponent(panchayatId.trim());
     const encodedDate = encodeURIComponent(date.trim());
-    return fetchApi<PanchayatDownscaleResponse>(`/api/v1/forecast/${encodedId}?date=${encodedDate}`);
+    return fetchApi<PanchayatDownscaleResponse>(`/forecast/${encodedId}?date=${encodedDate}`);
   },
 
   /** Alias for getPanchayatForecast */
@@ -25,12 +25,13 @@ export const panchayatApi = {
 
   /** Retrieves list of available panchayats from backend */
   listPanchayats: (): Promise<PanchayatBase[]> => {
-    return fetchApi<PanchayatBase[]>('/api/v1/panchayats');
+    return fetchApi<PanchayatBase[]>('/panchayats');
   },
 
   /** Retrieves detailed metadata for a specific panchayat */
   getPanchayat: (id: string): Promise<PanchayatDetail> => {
     const encodedId = encodeURIComponent(id.trim());
-    return fetchApi<PanchayatDetail>(`/api/v1/panchayats/${encodedId}`);
+    return fetchApi<PanchayatDetail>(`/panchayats/${encodedId}`);
   },
 };
+
