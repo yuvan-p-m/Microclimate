@@ -36,7 +36,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onSelectTab }) => {
         aria-label="Main Navigation"
         className="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800 w-full xl:w-auto justify-stretch xl:justify-end overflow-x-auto scrollbar-none"
       >
-        {/* Tab 1: Historical Simulation */}
+        {/* Tab 1: ML Weather Insights */}
         <button
           type="button"
           onClick={() => onSelectTab('historical')}
@@ -52,7 +52,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onSelectTab }) => {
             }`}
           />
           <div className="text-left">
-            <div className="leading-tight">Historical Simulation</div>
+            <div className="leading-tight">ML Weather Insights</div>
             <div
               className={`text-[10px] font-normal ${
                 activeTab === 'historical' ? 'text-emerald-400/80' : 'text-slate-500'
