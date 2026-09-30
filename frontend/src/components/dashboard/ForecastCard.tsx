@@ -41,7 +41,7 @@ export const ForecastCard: React.FC<ForecastCardProps> = ({ forecast, loading })
       <div className="flex items-center justify-between pb-3 border-b border-slate-800 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Layers className="w-5 h-5 text-emerald-400" />
-          <h3 className="font-semibold text-base">Hyperlocal Downscaled Forecast</h3>
+          <h3 className="font-semibold text-base">Hyper local Downscaled weather history</h3>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">

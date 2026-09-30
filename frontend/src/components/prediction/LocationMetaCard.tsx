@@ -1,7 +1,7 @@
 import React from 'react';
 import type { PanchayatMasterRecord } from '../../types/panchayat';
 import type { LiveWeatherPredictionData } from '../../types/prediction';
-import { Mountain, Compass, Trees } from 'lucide-react';
+import { Mountain, Compass, Trees, Waves } from 'lucide-react';
 
 interface LocationMetaCardProps {
   panchayat: PanchayatMasterRecord;
@@ -31,9 +31,9 @@ export const LocationMetaCard: React.FC<LocationMetaCardProps> = ({ panchayat, f
           <div className="text-base font-bold text-white mt-1">
             {panchayat.elevation_m.toFixed(0)} <span className="text-xs font-normal text-slate-400">m</span>
           </div>
-          {forecastData?.elevation && (
-            <div className="text-[10px] text-slate-400 mt-0.5">
-              API Grid: {forecastData.elevation.toFixed(0)}m
+          {forecastData?.elevation != null && (
+            <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
+              Elevation: {forecastData.elevation.toFixed(0)}m
             </div>
           )}
         </div>
@@ -76,7 +76,10 @@ export const LocationMetaCard: React.FC<LocationMetaCardProps> = ({ panchayat, f
 
         {/* Coastal Distance */}
         <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/40">
-          <div className="text-slate-400">Coast Distance</div>
+          <div className="text-slate-400 flex items-center gap-1">
+            <Waves className="w-3.5 h-3.5 text-sky-400" />
+            Coast Distance
+          </div>
           <div className="text-base font-bold text-white mt-1">
             {panchayat.coastal_distance_km.toFixed(1)} <span className="text-xs font-normal text-slate-400">km</span>
           </div>

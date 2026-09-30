@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { PANCHAYATS_DATA } from '../data/panchayats';
-import { CROPS_CATALOG, getCropById } from '../services/farmAdvisoryRules';
 import { getWeatherPrediction } from '../services/weatherPredictionApi';
 import { generateFarmAdvisory } from '../services/farmAdvisoryService';
-import type { FarmAdvisoryReport } from '../types/advisory';
-import { CropProfileHeaderCard } from '../components/advisory/CropProfileHeaderCard';
+import type { FarmAdvisoryReport, CropRuleDefinition } from '../types/advisory';
+import type { LiveWeatherPredictionData } from '../types/prediction';
+import { RecommendedCropHeroCard } from '../components/advisory/RecommendedCropHeroCard';
 import { AdvisoryCard } from '../components/advisory/AdvisoryCard';
 import { AdvisoryMethodologyBox } from '../components/advisory/AdvisoryMethodologyBox';
 import {
@@ -24,10 +24,16 @@ export const FarmAdvisoryPage: React.FC<FarmAdvisoryPageProps> = ({
   initialPanchayatId = 'TN_NIL_OOTY_01',
   onPanchayatChange,
 }) => {
+  // Source of truth state for selected Panchayat
   const [selectedPanchayatId, setSelectedPanchayatId] = useState<string>(initialPanchayatId);
-  const [selectedCropId, setSelectedCropId] = useState<string>('potato');
 
-  // Advisory state
+  // Cached live weather data for the current panchayat
+  const [weatherData, setWeatherData] = useState<LiveWeatherPredictionData | null>(null);
+
+  // Optional manual crop override (defaults to null so automatic recommendation is used)
+  const [customCrop, setCustomCrop] = useState<CropRuleDefinition | null>(null);
+
+  // Advisory state (Automatically recommended crop + operational guidance)
   const [advisoryReport, setAdvisoryReport] = useState<FarmAdvisoryReport | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,13 +41,29 @@ export const FarmAdvisoryPage: React.FC<FarmAdvisoryPageProps> = ({
   const selectedPanchayat =
     PANCHAYATS_DATA.find((p) => p.panchayat_id === selectedPanchayatId) || PANCHAYATS_DATA[0];
 
-  const selectedCrop = getCropById(selectedCropId);
   const blocks = Array.from(new Set(PANCHAYATS_DATA.map((p) => p.block_name))).sort();
 
   const handlePanchayatSelect = (panchayatId: string) => {
     setSelectedPanchayatId(panchayatId);
+    setCustomCrop(null); // Reset manual override on location change
     if (onPanchayatChange) {
       onPanchayatChange(panchayatId);
+    }
+  };
+
+  const handleSelectCrop = (crop: CropRuleDefinition) => {
+    setCustomCrop(crop);
+    if (selectedPanchayat && weatherData) {
+      const report = generateFarmAdvisory(selectedPanchayat, weatherData, crop);
+      setAdvisoryReport(report);
+    }
+  };
+
+  const handleResetToRecommended = () => {
+    setCustomCrop(null);
+    if (selectedPanchayat && weatherData) {
+      const report = generateFarmAdvisory(selectedPanchayat, weatherData, undefined);
+      setAdvisoryReport(report);
     }
   };
 
@@ -50,27 +72,31 @@ export const FarmAdvisoryPage: React.FC<FarmAdvisoryPageProps> = ({
 
     setLoading(true);
     setError(null);
+    setAdvisoryReport(null);
 
     try {
       const liveWeather = await getWeatherPrediction(
         selectedPanchayat.latitude,
         selectedPanchayat.longitude
       );
+      setWeatherData(liveWeather);
 
-      const report = generateFarmAdvisory(selectedPanchayat, selectedCrop, liveWeather);
+      // Automatically recommend the optimal crop and generate the comprehensive advisory
+      const report = generateFarmAdvisory(selectedPanchayat, liveWeather, customCrop || undefined);
       setAdvisoryReport(report);
     } catch (err: unknown) {
       setAdvisoryReport(null);
+      setWeatherData(null);
       const errorMsg = err instanceof Error ? err.message : String(err);
       setError(
-        errorMsg || 'Weather data unavailable. Farm advisory cannot be generated.'
+        errorMsg || 'Unable to generate crop recommendation. Please try again.'
       );
     } finally {
       setLoading(false);
     }
-  }, [selectedPanchayat, selectedCrop]);
+  }, [selectedPanchayat, customCrop]);
 
-  // Fetch forecast when Panchayat or Crop changes
+  // Fetch forecast and recommend crop when Panchayat changes
   useEffect(() => {
     let isCancelled = false;
 
@@ -78,6 +104,7 @@ export const FarmAdvisoryPage: React.FC<FarmAdvisoryPageProps> = ({
       if (!selectedPanchayat) return;
       setLoading(true);
       setError(null);
+      setAdvisoryReport(null);
 
       try {
         const liveWeather = await getWeatherPrediction(
@@ -85,15 +112,17 @@ export const FarmAdvisoryPage: React.FC<FarmAdvisoryPageProps> = ({
           selectedPanchayat.longitude
         );
         if (!isCancelled) {
-          const report = generateFarmAdvisory(selectedPanchayat, selectedCrop, liveWeather);
+          setWeatherData(liveWeather);
+          const report = generateFarmAdvisory(selectedPanchayat, liveWeather, customCrop || undefined);
           setAdvisoryReport(report);
         }
       } catch (err: unknown) {
         if (!isCancelled) {
           setAdvisoryReport(null);
+          setWeatherData(null);
           const errorMsg = err instanceof Error ? err.message : String(err);
           setError(
-            errorMsg || 'Weather data unavailable. Farm advisory cannot be generated.'
+            errorMsg || 'Unable to generate crop recommendation. Please try again.'
           );
         }
       } finally {
@@ -108,15 +137,21 @@ export const FarmAdvisoryPage: React.FC<FarmAdvisoryPageProps> = ({
     return () => {
       isCancelled = true;
     };
-  }, [selectedPanchayat, selectedCrop]);
+  }, [selectedPanchayat, customCrop]);
+
+  const isCustomCropSelected = Boolean(
+    customCrop &&
+    advisoryReport &&
+    customCrop.id !== advisoryReport.recommendation.crop.id
+  );
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Control Bar: Panchayat & Crop Selection */}
+      {/* Control Bar: Panchayat Selection */}
       <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-sm space-y-4">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
-          {/* Target Panchayat Selector (5 cols) */}
-          <div className="lg:col-span-5">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          {/* Target Panchayat Selector */}
+          <div className="flex-1 w-full lg:w-auto">
             <label className="block text-xs font-semibold text-slate-400 mb-1.5 flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-emerald-400" />
               <span>Target Panchayat</span>
@@ -148,33 +183,13 @@ export const FarmAdvisoryPage: React.FC<FarmAdvisoryPageProps> = ({
             </div>
           </div>
 
-          {/* Crop Selector (4 cols) */}
-          <div className="lg:col-span-4">
-            <label className="block text-xs font-semibold text-slate-400 mb-1.5 flex items-center gap-1.5">
-              <Sprout className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Target Nilgiris Crop</span>
-            </label>
-            <div className="relative">
-              <select
-                value={selectedCropId}
-                onChange={(e) => setSelectedCropId(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-lg px-3.5 py-2.5 focus:outline-none focus:border-emerald-500 font-medium cursor-pointer"
-              >
-                {CROPS_CATALOG.map((crop) => (
-                  <option key={crop.id} value={crop.id} className="bg-slate-800 text-slate-100">
-                    {crop.name} ({crop.category}) — {crop.scientificName}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Location & Refresh Controls (3 cols) */}
-          <div className="lg:col-span-3 flex items-center gap-2 justify-between lg:justify-end">
-            <div className="bg-slate-800/80 border border-slate-700/60 px-3 py-2 rounded-lg text-xs flex items-center gap-1.5 font-mono text-slate-300">
+          {/* Location & Refresh Controls */}
+          <div className="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-end flex-wrap">
+            <div className="bg-slate-800/80 border border-slate-700/60 px-3.5 py-2 rounded-lg text-xs flex items-center gap-1.5 font-mono text-slate-300">
               <Compass className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               <span>
-                {selectedPanchayat.latitude.toFixed(4)}° N, {selectedPanchayat.longitude.toFixed(4)}° E
+                <strong className="text-white">{selectedPanchayat.latitude.toFixed(4)}° N</strong>,{' '}
+                <strong className="text-white">{selectedPanchayat.longitude.toFixed(4)}° E</strong>
               </span>
             </div>
 
@@ -182,32 +197,36 @@ export const FarmAdvisoryPage: React.FC<FarmAdvisoryPageProps> = ({
               type="button"
               onClick={loadAdvisory}
               disabled={loading}
-              title="Refresh Live Advisory"
-              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+              title="Refresh Advisory"
+              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-emerald-400' : ''}`} />
-              <span>Refresh</span>
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh Advisory</span>
             </button>
           </div>
         </div>
 
-        {/* Quick Crop Selector Pills */}
-        <div className="flex items-center gap-2 flex-wrap pt-3 border-t border-slate-800/80 text-xs">
-          <span className="text-slate-500 text-[11px] font-medium">Quick Crops:</span>
-          {CROPS_CATALOG.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => setSelectedCropId(c.id)}
-              className={`px-3 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer flex items-center gap-1 ${
-                selectedCropId === c.id
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
-                  : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/50'
-              }`}
-            >
-              <span>{c.name}</span>
-            </button>
-          ))}
+        {/* Panchayat Quick Info Subtitle */}
+        <div className="flex items-center gap-4 flex-wrap pt-3 border-t border-slate-800/80 text-xs text-slate-400">
+          <span className="flex items-center gap-1">
+            <span className="text-slate-500 font-medium">Block:</span>{' '}
+            <strong className="text-slate-300">{selectedPanchayat.block_name}</strong>
+          </span>
+          <span>&bull;</span>
+          <span className="flex items-center gap-1">
+            <span className="text-slate-500 font-medium">District:</span>{' '}
+            <strong className="text-slate-300">{selectedPanchayat.district}</strong>
+          </span>
+          <span>&bull;</span>
+          <span className="flex items-center gap-1">
+            <span className="text-slate-500 font-medium">Elevation:</span>{' '}
+            <strong className="text-slate-300">{selectedPanchayat.elevation_m.toFixed(0)} m</strong>
+          </span>
+          <span>&bull;</span>
+          <span className="flex items-center gap-1">
+            <span className="text-slate-500 font-medium">Climate:</span>{' '}
+            <strong className="text-emerald-400">{selectedPanchayat.climate_zone.split('(')[0].trim()}</strong>
+          </span>
         </div>
       </div>
 
@@ -216,8 +235,11 @@ export const FarmAdvisoryPage: React.FC<FarmAdvisoryPageProps> = ({
         <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 flex items-start gap-3 shadow-md">
           <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
           <div className="flex-1 text-xs">
-            <h4 className="font-bold text-sm text-rose-200">Weather data unavailable</h4>
+            <h4 className="font-bold text-sm text-rose-200">Unable to generate crop recommendation</h4>
             <p className="mt-1 leading-relaxed">{error}</p>
+            <p className="mt-2 text-rose-400 text-[11px]">
+              Please check your network connection or try again. No synthetic fallback crops are substituted.
+            </p>
           </div>
           <button
             type="button"
@@ -232,38 +254,48 @@ export const FarmAdvisoryPage: React.FC<FarmAdvisoryPageProps> = ({
       {/* Loading Indicator */}
       {loading && !advisoryReport && (
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center text-slate-300 shadow-sm flex flex-col items-center justify-center space-y-4">
-          <Sprout className="w-10 h-10 text-emerald-400 animate-pulse" />
+          <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+            <Sprout className="w-10 h-10 text-emerald-400 animate-pulse" />
+          </div>
           <div className="space-y-1">
-            <h3 className="text-lg font-semibold text-white">Generating Rule-Based Farm Advisory...</h3>
+            <h3 className="text-lg font-semibold text-white">Analyzing Local Weather and Environmental Conditions...</h3>
             <p className="text-xs text-slate-400">
-              Evaluating live Open-Meteo forecast and agronomic thresholds for {selectedCrop.name} in {selectedPanchayat.name}
+              Evaluating elevation, temperature, moisture, and seasonal rules to recommend the optimal crop for {selectedPanchayat.name}
             </p>
           </div>
         </div>
       )}
 
-      {/* Main Advisory Content */}
+      {/* Main Advisory Content Driven by Recommended or Selected Crop */}
       {!loading && advisoryReport && (
         <>
-          {/* Top Hero: Crop Agronomic Profile + Live Weather Snapshot */}
-          <CropProfileHeaderCard report={advisoryReport} />
+          {/* Top Hero: Recommended Crop Profile + Switch Crop Modal + Current Conditions */}
+          <RecommendedCropHeroCard
+            report={advisoryReport}
+            onSelectCrop={handleSelectCrop}
+            onResetToRecommended={handleResetToRecommended}
+            isCustomCropSelected={isCustomCropSelected}
+          />
 
-          {/* 4 Main Operational Advisory Cards in 2x2 Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-            {/* 1. Sowing & Planting */}
+          {/* Operational Advisory Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
+            {/* 1. Sowing & Field Preparation */}
             <AdvisoryCard advisory={advisoryReport.sowing} />
 
             {/* 2. Irrigation Management */}
             <AdvisoryCard advisory={advisoryReport.irrigation} />
 
-            {/* 3. Crop Protection (Spray Window) */}
+            {/* 3. Fertilizer & Nutrient Guidance */}
+            <AdvisoryCard advisory={advisoryReport.fertilizer} />
+
+            {/* 4. Disease & Pest Risk (Spray Window) */}
             <AdvisoryCard advisory={advisoryReport.cropProtection} />
 
-            {/* 4. Harvest Weather Window */}
+            {/* 5. Harvest & Weather Risk Window */}
             <AdvisoryCard advisory={advisoryReport.harvest} />
           </div>
 
-          {/* Bottom Methodology & Prototype Disclaimer Box */}
+          {/* Bottom Methodology & Automation Workflow Box */}
           <AdvisoryMethodologyBox />
         </>
       )}

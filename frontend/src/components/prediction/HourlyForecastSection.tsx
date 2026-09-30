@@ -46,7 +46,7 @@ export const HourlyForecastSection: React.FC<HourlyForecastSectionProps> = ({ ho
       <div className="flex items-center justify-between pb-3 border-b border-slate-800 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Clock className="w-5 h-5 text-emerald-400" />
-          <h3 className="font-semibold text-base">Hourly Forecast (Next 36 Hours)</h3>
+          <h3 className="font-semibold text-base">36-Hour Microclimate Progression</h3>
         </div>
 
         {/* View Toggle */}

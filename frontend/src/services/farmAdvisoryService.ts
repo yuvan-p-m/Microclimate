@@ -1,7 +1,8 @@
 /**
- * Deterministic Rule-Based Farm Advisory Service.
- * Evaluates live numerical forecast data, Panchayat environmental context,
- * and agronomic crop thresholds to produce explainable farm recommendations.
+ * Deterministic Rule-Based Farm Advisory & Crop Recommendation Service.
+ * Evaluates live weather forecast data, Panchayat environmental context,
+ * and agronomic crop thresholds to automatically recommend the optimal crop
+ * and produce explainable operational farm recommendations.
  *
  * NOTE: Sourced strictly from transparent heuristic rules. This is a prototype
  * advisory engine and does NOT replace in-person agricultural expert guidance.
@@ -9,8 +10,11 @@
 
 import type { PanchayatMasterRecord } from '../types/panchayat';
 import type { LiveWeatherPredictionData } from '../types/prediction';
+import { CROPS_CATALOG } from './farmAdvisoryRules';
 import type {
   CropRuleDefinition,
+  CropRecommendationResult,
+  ActiveCropEvaluationResult,
   FarmAdvisoryReport,
   AdvisoryCategoryOutput,
   AdvisoryActionStatus,
@@ -50,13 +54,152 @@ function getStatusStyle(status: AdvisoryActionStatus): {
 }
 
 /**
- * Generates a complete deterministic rule-based advisory for the given Panchayat, crop, and live weather forecast.
+ * Evaluates the agronomic suitability of a specific crop for a Panchayat and forecast.
+ */
+export function evaluateCropSuitability(
+  crop: CropRuleDefinition,
+  panchayat: PanchayatMasterRecord,
+  forecast: LiveWeatherPredictionData
+): ActiveCropEvaluationResult {
+  const current = forecast.current;
+  const daily = forecast.daily;
+
+  const tempC = current.temperature;
+  const elevationM = panchayat.elevation_m;
+  const total7dRainMm = daily.reduce((sum, d) => sum + d.precipitationSum, 0);
+  const currentMonth = new Date().getMonth() + 1; // 1-12
+
+  let score = 0;
+  const factors: string[] = [];
+
+  // 1. Elevation Fit (35 max points)
+  const [minElev, maxElev] = crop.idealElevationRangeM;
+  if (elevationM >= minElev && elevationM <= maxElev) {
+    score += 35;
+    factors.push(`Optimal elevation match (${elevationM.toFixed(0)}m within ${minElev}–${maxElev}m)`);
+  } else if (elevationM < minElev) {
+    const elevPenalty = Math.min(35, ((minElev - elevationM) / 500) * 35);
+    score += Math.max(0, 35 - elevPenalty);
+    factors.push(`Lower elevation than ideal (${elevationM.toFixed(0)}m vs ideal min ${minElev}m)`);
+  } else {
+    const elevPenalty = Math.min(35, ((elevationM - maxElev) / 500) * 35);
+    score += Math.max(0, 35 - elevPenalty);
+    factors.push(`Higher elevation than ideal (${elevationM.toFixed(0)}m vs ideal max ${maxElev}m)`);
+  }
+
+  // 2. Temperature Fit (30 max points)
+  const [minTemp, maxTemp] = crop.idealTempRangeC;
+  if (tempC >= minTemp && tempC <= maxTemp) {
+    score += 30;
+    factors.push(`Temperature (${Math.round(tempC)}°C) within optimal range (${minTemp}°C–${maxTemp}°C)`);
+  } else if (tempC < minTemp) {
+    const tempPenalty = Math.min(30, ((minTemp - tempC) / 8) * 30);
+    score += Math.max(0, 30 - tempPenalty);
+    factors.push(`Current temperature (${Math.round(tempC)}°C) cooler than preferred range (${minTemp}°C–${maxTemp}°C)`);
+  } else {
+    const tempPenalty = Math.min(30, ((tempC - maxTemp) / 8) * 30);
+    score += Math.max(0, 30 - tempPenalty);
+    factors.push(`Current temperature (${Math.round(tempC)}°C) warmer than preferred range (${minTemp}°C–${maxTemp}°C)`);
+  }
+
+  // 3. Moisture & Rainfall Sensitivity (20 max points)
+  if (crop.heavyRainSensitivity === 'high') {
+    if (total7dRainMm < 20) {
+      score += 20;
+      factors.push(`Moderate rainfall (${total7dRainMm.toFixed(1)}mm) minimizes waterlogging risk`);
+    } else if (total7dRainMm < 45) {
+      score += 12;
+      factors.push(`Moderate 7-day rainfall (${total7dRainMm.toFixed(1)}mm)`);
+    } else {
+      score += 5;
+      factors.push(`Elevated 7-day rainfall (${total7dRainMm.toFixed(1)}mm) increases disease risk`);
+    }
+  } else if (crop.heavyRainSensitivity === 'medium') {
+    if (total7dRainMm < 50) {
+      score += 20;
+      factors.push(`Well suited to moderate moisture (${total7dRainMm.toFixed(1)}mm 7-day rain)`);
+    } else {
+      score += 12;
+      factors.push(`Higher rainfall (${total7dRainMm.toFixed(1)}mm) with moderate tolerance`);
+    }
+  } else {
+    // Plantation / low sensitivity (e.g. Tea)
+    if (total7dRainMm >= 10 || panchayat.slope_deg > 12) {
+      score += 20;
+      factors.push(`High slope (${panchayat.slope_deg.toFixed(1)}°) and climate suited for plantation`);
+    } else {
+      score += 14;
+      factors.push(`Moderate plantation terrain suitability`);
+    }
+  }
+
+  // 4. Sowing / Season Calendar Window (15 max points)
+  if (crop.sowingMonths.includes(currentMonth)) {
+    score += 15;
+    factors.push(`Active planting season window in Month ${currentMonth}`);
+  } else {
+    score += 6;
+    factors.push(`Secondary season window (Primary: ${crop.sowingSeasonNames.split(',')[0] || crop.sowingSeasonNames})`);
+  }
+
+  const finalPct = Math.min(99, Math.max(45, Math.round(score)));
+
+  const suitabilityReason = `${crop.name} suitability score is evaluated at ${finalPct}% for ${panchayat.name}. Panchayat elevation (${elevationM.toFixed(0)}m) and current temperature (${Math.round(tempC)}°C) align with agronomic thresholds for ${crop.scientificName}.`;
+
+  return {
+    crop,
+    suitabilityScorePct: finalPct,
+    suitabilityReason,
+    matchingFactors: factors,
+  };
+}
+
+/**
+ * Automatically evaluates all catalog crops and recommends the most suitable crop
+ * based on Panchayat environmental features and current/forecast meteorological conditions.
+ */
+export function recommendBestCrop(
+  panchayat: PanchayatMasterRecord,
+  forecast: LiveWeatherPredictionData
+): CropRecommendationResult {
+  const scoredCrops = CROPS_CATALOG.map((crop) =>
+    evaluateCropSuitability(crop, panchayat, forecast)
+  );
+
+  // Sort descending by score
+  scoredCrops.sort((a, b) => b.suitabilityScorePct - a.suitabilityScorePct);
+
+  const topMatch = scoredCrops[0];
+  const alternatives = scoredCrops.slice(1, 4).map((sc) => ({
+    crop: sc.crop,
+    suitabilityScorePct: sc.suitabilityScorePct,
+  }));
+
+  const topReason = `${topMatch.crop.name} is recommended as the highest suitability match (${topMatch.suitabilityScorePct}%) for ${panchayat.name}. Panchayat elevation (${panchayat.elevation_m.toFixed(0)}m) and current temperature (${Math.round(forecast.current.temperature)}°C) closely align with the optimal physiological requirements for ${topMatch.crop.scientificName}.`;
+
+  return {
+    crop: topMatch.crop,
+    suitabilityScorePct: topMatch.suitabilityScorePct,
+    recommendationReason: topReason,
+    matchingFactors: topMatch.matchingFactors,
+    alternativeCandidates: alternatives,
+  };
+}
+
+/**
+ * Generates a complete deterministic rule-based advisory for the given Panchayat and live weather forecast,
+ * driven by the automatically recommended or explicitly switched crop.
  */
 export function generateFarmAdvisory(
   panchayat: PanchayatMasterRecord,
-  crop: CropRuleDefinition,
-  forecast: LiveWeatherPredictionData
+  forecast: LiveWeatherPredictionData,
+  explicitCrop?: CropRuleDefinition
 ): FarmAdvisoryReport {
+  // Step 1: Automatically compute crop recommendation
+  const recommendation = recommendBestCrop(panchayat, forecast);
+  const crop = explicitCrop || recommendation.crop;
+  const activeCropEvaluation = evaluateCropSuitability(crop, panchayat, forecast);
+
   const current = forecast.current;
   const daily = forecast.daily;
 
@@ -125,7 +268,7 @@ export function generateFarmAdvisory(
 
   const { statusLabel: sowingLabel, statusColorClass: sowingColor } = getStatusStyle(sowingStatus);
   const sowingOutput: AdvisoryCategoryOutput = {
-    title: 'Sowing & Field Planting',
+    title: 'Sowing & Field Preparation',
     status: sowingStatus,
     statusLabel: sowingLabel,
     statusColorClass: sowingColor,
@@ -187,7 +330,50 @@ export function generateFarmAdvisory(
   };
 
   // -------------------------------------------------------------
-  // 3. CROP PROTECTION / SPRAY WEATHER WINDOW ADVISORY
+  // 3. FERTILIZER & NUTRIENT MANAGEMENT ADVISORY
+  // -------------------------------------------------------------
+  let fertilizerStatus: AdvisoryActionStatus = 'Recommended';
+  let fertilizerSummary = '';
+  let fertilizerReason = '';
+  let fertilizerWindow = 'Next 2–3 days';
+  let fertilizerEvidence = '';
+
+  if (next48hRainMm > 12.0 || todayRainProb > 65 || tomorrowRainProb > 65) {
+    fertilizerStatus = 'Delay';
+    fertilizerSummary = 'Postpone topdressing; risk of nutrient leaching & runoff';
+    fertilizerReason = `Upcoming precipitation (${next48hRainMm.toFixed(1)} mm in 48h) poses a severe risk of washing soluble fertilizers (nitrogen/potash) down hill slopes. Defer application until dry weather stabilizes.`;
+    fertilizerWindow = 'Postpone until 24 hours after heavy rain';
+    fertilizerEvidence = `Rain Prob: ${Math.max(todayRainProb, tomorrowRainProb)}%, 48h Rain: ${next48hRainMm.toFixed(1)} mm`;
+  } else if (totalRainfallMm < 1.0 && humidityPct < 45) {
+    fertilizerStatus = 'Monitor';
+    fertilizerSummary = 'Dry topsoil; incorporate fertilizer with light irrigation';
+    fertilizerReason = `Very dry surface conditions inhibit granule dissolution. Ensure light irrigation is applied simultaneously with nutrient topdressing.`;
+    fertilizerWindow = 'Early morning with supplemental watering';
+    fertilizerEvidence = `Humidity: ${humidityPct}%, 7-Day Rain: ${totalRainfallMm.toFixed(1)} mm`;
+  } else {
+    fertilizerStatus = 'Recommended';
+    fertilizerSummary = 'Favorable soil moisture window for nutrient application';
+    fertilizerReason = `Mild soil moisture and calm meteorological conditions are optimal for split-dose NPK or micronutrient application without leaching risk.`;
+    fertilizerWindow = 'Next 24–48 hours';
+    fertilizerEvidence = `Temp: ${Math.round(tempC)}°C, 48h Rain: ${next48hRainMm.toFixed(1)} mm (Optimal absorption)`;
+  }
+
+  const { statusLabel: fertilizerLabel, statusColorClass: fertilizerColor } = getStatusStyle(fertilizerStatus);
+  const fertilizerOutput: AdvisoryCategoryOutput = {
+    title: 'Fertilizer & Nutrient Guidance',
+    status: fertilizerStatus,
+    statusLabel: fertilizerLabel,
+    statusColorClass: fertilizerColor,
+    summary: fertilizerSummary,
+    reason: fertilizerReason,
+    suggestedWindow: fertilizerWindow,
+    weatherEvidence: fertilizerEvidence,
+    guidanceNote: 'Apply along terrace contours. Split-dose nitrogen application prevents leaching in hill soils.',
+    iconName: 'FlaskConical',
+  };
+
+  // -------------------------------------------------------------
+  // 4. CROP PROTECTION / SPRAY WEATHER WINDOW ADVISORY
   // -------------------------------------------------------------
   let sprayStatus: AdvisoryActionStatus = 'Recommended';
   let spraySummary = '';
@@ -209,8 +395,8 @@ export function generateFarmAdvisory(
     sprayEvidence = `Current Wind: ${Math.round(windKmh)} km/h (Limit: ${crop.maxSafeWindSpeedKmh} km/h)`;
   } else if (humidityPct > 90) {
     sprayStatus = 'Monitor';
-    spraySummary = 'High humidity/fog; slow droplet drying';
-    sprayReason = `High relative humidity (${humidityPct}%) and morning fog retard spray drying. Apply once foliage dries after sunrise.`;
+    spraySummary = 'High humidity/fog; elevated fungal pressure';
+    sprayReason = `High relative humidity (${humidityPct}%) and morning fog elevate disease risk (e.g. late blight / leaf spot) but retard spray droplet drying. Apply once foliage dries after sunrise.`;
     sprayWindow = 'Mid-morning after dew evaporates';
     sprayEvidence = `Relative Humidity: ${humidityPct}%, Wind: ${Math.round(windKmh)} km/h`;
   } else {
@@ -223,7 +409,7 @@ export function generateFarmAdvisory(
 
   const { statusLabel: sprayLabel, statusColorClass: sprayColor } = getStatusStyle(sprayStatus);
   const cropProtectionOutput: AdvisoryCategoryOutput = {
-    title: 'Crop Protection (Spray Window)',
+    title: 'Disease & Pest Risk (Spray Window)',
     status: sprayStatus,
     statusLabel: sprayLabel,
     statusColorClass: sprayColor,
@@ -236,7 +422,7 @@ export function generateFarmAdvisory(
   };
 
   // -------------------------------------------------------------
-  // 4. HARVEST WEATHER WINDOW ADVISORY
+  // 5. HARVEST WEATHER WINDOW ADVISORY
   // -------------------------------------------------------------
   let harvestStatus: AdvisoryActionStatus = 'Recommended';
   let harvestSummary = '';
@@ -266,7 +452,7 @@ export function generateFarmAdvisory(
 
   const { statusLabel: harvestLabel, statusColorClass: harvestColor } = getStatusStyle(harvestStatus);
   const harvestOutput: AdvisoryCategoryOutput = {
-    title: 'Harvest Weather Window',
+    title: 'Harvest & Weather Risk Window',
     status: harvestStatus,
     statusLabel: harvestLabel,
     statusColorClass: harvestColor,
@@ -282,6 +468,8 @@ export function generateFarmAdvisory(
     panchayatId: panchayat.panchayat_id,
     panchayatName: panchayat.name,
     crop,
+    activeCropEvaluation,
+    recommendation,
     generatedAt: new Date().toISOString(),
     currentWeatherSnapshot: {
       tempC: current.temperature,
@@ -303,6 +491,7 @@ export function generateFarmAdvisory(
     },
     sowing: sowingOutput,
     irrigation: irrigationOutput,
+    fertilizer: fertilizerOutput,
     cropProtection: cropProtectionOutput,
     harvest: harvestOutput,
     environmentalContext: {

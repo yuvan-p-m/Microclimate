@@ -33,10 +33,30 @@ export interface AdvisoryCategoryOutput {
   iconName: string;
 }
 
+export interface CropRecommendationResult {
+  crop: CropRuleDefinition;
+  suitabilityScorePct: number; // 0-100
+  recommendationReason: string;
+  matchingFactors: string[];
+  alternativeCandidates: {
+    crop: CropRuleDefinition;
+    suitabilityScorePct: number;
+  }[];
+}
+
+export interface ActiveCropEvaluationResult {
+  crop: CropRuleDefinition;
+  suitabilityScorePct: number;
+  suitabilityReason: string;
+  matchingFactors: string[];
+}
+
 export interface FarmAdvisoryReport {
   panchayatId: string;
   panchayatName: string;
   crop: CropRuleDefinition;
+  activeCropEvaluation: ActiveCropEvaluationResult;
+  recommendation: CropRecommendationResult;
   generatedAt: string;
   currentWeatherSnapshot: {
     tempC: number;
@@ -58,6 +78,7 @@ export interface FarmAdvisoryReport {
   };
   sowing: AdvisoryCategoryOutput;
   irrigation: AdvisoryCategoryOutput;
+  fertilizer: AdvisoryCategoryOutput;
   cropProtection: AdvisoryCategoryOutput;
   harvest: AdvisoryCategoryOutput;
   environmentalContext: {

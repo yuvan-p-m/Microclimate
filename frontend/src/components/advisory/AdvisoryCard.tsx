@@ -5,6 +5,7 @@ import {
   Droplets,
   Shield,
   Wheat,
+  FlaskConical,
   Clock,
   Info,
   CheckCircle2,
@@ -22,6 +23,8 @@ function renderMainIcon(name: string) {
       return <Shield className="w-5 h-5 text-emerald-400" />;
     case 'Wheat':
       return <Wheat className="w-5 h-5 text-emerald-400" />;
+    case 'FlaskConical':
+      return <FlaskConical className="w-5 h-5 text-emerald-400" />;
     default:
       return <Sprout className="w-5 h-5 text-emerald-400" />;
   }

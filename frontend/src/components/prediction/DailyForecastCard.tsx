@@ -15,10 +15,10 @@ export const DailyForecastCard: React.FC<DailyForecastCardProps> = ({ daily }) =
       <div className="flex items-center justify-between pb-3 border-b border-slate-800 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Calendar className="w-5 h-5 text-sky-400" />
-          <h3 className="font-semibold text-base">7-Day Upcoming Weather Forecast</h3>
+          <h3 className="font-semibold text-base">7-Day Downscaled Weather Outlook</h3>
         </div>
         <span className="text-xs text-slate-400 font-medium">
-          Daily Numerical Prognosis
+          Multi-Day Microclimate Prognosis
         </span>
       </div>
 
